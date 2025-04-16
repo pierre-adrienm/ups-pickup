@@ -1,0 +1,10 @@
+version: "3.8"
+
+services:
+  ups_pickup:
+    build: .
+    env_file:
+      - app/.env
+    ports:
+      - "5000:5000"
+    command: ["python", "app.py"]

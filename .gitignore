@@ -1,0 +1,28 @@
+# 📁 Dossiers Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# 📦 Dossier virtuel (si tu en utilises un localement)
+venv/
+.env/
+
+# 🐳 Docker fichiers temporaires
+*.log
+*.pid
+
+# 🔐 Fichier sensible avec secrets
+app/.env
+
+# 📄 Fichiers système
+.DS_Store
+Thumbs.db
+
+# 🐍 Jupyter (au cas où)
+*.ipynb_checkpoints/
+
+# 🚀 PyInstaller
+dist/
+build/
+*.spec
