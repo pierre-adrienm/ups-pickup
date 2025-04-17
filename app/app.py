@@ -1,35 +1,45 @@
 import os
 from flask import Flask, jsonify
 from pickup import schedule_pickup
+import requests
 
 app = Flask(__name__)
 
-@app.route("/api/pickup/test", methods=["GET"])
+@app.route('/api/pickup/test')
 def test():
-    try:
-        test_data = {
-            "nom": "Jean Dupont",
-            "telephone": "0601020304",
-            "adresse": "7 allée Métis",
-            "ville": "Saint-Malo",
-            "code_postal": "35400",
-            "date": "20250417",
-            "nombre_colis": 1,
-            "poids_total": 2,
-            "account_number": os.getenv("UPS_ACCOUNT_NUMBER")
-        }
-        result = schedule_pickup(test_data)
-        return jsonify(result)
-    except Exception as e:
-        import traceback
-        trace = traceback.format_exc()
-        print("🧨 Une erreur s'est produite :")
-        print(trace)
+    test_data = {
+        "nom": "Jean Dupont",
+        "telephone": "0601020304",
+        "adresse": "7 allée Métis",
+        "ville": "Saint-Malo",
+        "code_postal": "35400",
+        "date": "20250417",
+        "nombre_colis": 1,
+        "poids_total": 2
+    }
+
+    # 🔐 Récupérer le token d'accès UPS
+    auth_response = requests.post(
+        "https://onlinetools.ups.com/security/v1/oauth/token",
+        headers={
+            "Content-Type": "application/x-www-form-urlencoded",
+            "Authorization": "Basic " + os.getenv("UPS_ENCODED_CREDENTIALS")
+        },
+        data={"grant_type": "client_credentials"}
+    )
+
+    if auth_response.status_code != 200:
         return jsonify({
             "status": "error",
-            "message": str(e),
-            "trace": trace
-        }), 500
+            "message": "Échec de l'authentification",
+            "details": auth_response.text
+        })
 
-if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=5000, debug=True)
+    access_token = auth_response.json()["access_token"]
+
+    # 📦 Appel de la fonction avec le bon token
+    result = schedule_pickup(test_data, access_token)
+    return jsonify(result)
+
+if __name__ == '__main__':
+    app.run(debug=True, host='0.0.0.0')
