@@ -13,8 +13,8 @@ def test():
         "adresse": "7 allée Métis",
         "ville": "Saint-Malo",
         "code_postal": "35400",
-        "date": "20250417",
-        "nombre_colis": 1,
+        "date": "20250418",
+        "nombre_colis": 2,
         "poids_total": 2
     }
 

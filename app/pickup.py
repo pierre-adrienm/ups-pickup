@@ -9,7 +9,7 @@ def schedule_pickup(data, access_token):
     print("📦 Planification d’un enlèvement UPS...")
 
     version = "v1"
-    url = f"https://wwwcie.ups.com/api/pickupcreation/{version}/pickup"
+    url = f"https://onlinetools.ups.com/api/pickupcreation/{version}/pickup"
 
     payload = {
         "PickupCreationRequest": {
@@ -42,7 +42,7 @@ def schedule_pickup(data, access_token):
             "AlternateAddressIndicator": "N",
             "PickupPiece": [
                 {
-                    "ServiceCode": "001",
+                    "ServiceCode": "065",
                     "Quantity": str(data["nombre_colis"]),
                     "DestinationCountryCode": "FR",
                     "ContainerCode": "02"
