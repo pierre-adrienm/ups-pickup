@@ -21,8 +21,8 @@ def schedule_pickup(data, access_token):
                 }
             },
             "PickupDateInfo": {
-                "CloseTime": "1700",
-                "ReadyTime": "0900",
+                "CloseTime": data["heure_fin"],
+                "ReadyTime": data["heure_debut"],
                 "PickupDate": data["date"]
             },
             "PickupAddress": {
@@ -33,7 +33,7 @@ def schedule_pickup(data, access_token):
                 "PostalCode": data["code_postal"],
                 "CountryCode": "FR",
                 "ResidentialIndicator": "N",
-                "PickupPoint": "Réception",
+                "PickupPoint": "Porte",
                 "Phone": {
                     "Number": data["telephone"],
                     "Extension": ""
@@ -54,8 +54,7 @@ def schedule_pickup(data, access_token):
             },
             "OverweightIndicator": "N",
             "PaymentMethod": "01",
-            "SpecialInstruction": "Test depuis Labeko",
-            "ReferenceNumber": "LabekoRef001"
+            "SpecialInstruction": "Test depuis Labeko"
         }
     }
 
