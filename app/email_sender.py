@@ -1,6 +1,8 @@
 import os
 import smtplib
 from email.message import EmailMessage
+from email.mime.multipart import MIMEMultipart
+from email.mime.text import MIMEText
 from dotenv import load_dotenv
 
 # Charger les variables d’environnement
@@ -24,13 +26,18 @@ EMAIL_HOST_USER = os.getenv("EMAIL_HOST_USER")
 EMAIL_HOST_PASSWORD = os.getenv("EMAIL_HOST_PASSWORD")
 EMAIL_FROM = os.getenv("EMAIL_FROM")
 
-def send_email(subject, body, to):
+def send_email(to, cc, subject, body, html=False):
     try:
-        msg = EmailMessage()
+        msg = MIMEMultipart("alternative")
         msg["Subject"] = subject
         msg["From"] = EMAIL_FROM
         msg["To"] = to
-        msg.set_content(body)
+        msg["Cc"] = cc
+
+        if html:
+            msg.attach(MIMEText(body, "html"))
+        else:
+            msg.attach(MIMEText(body, "plain"))
 
         with smtplib.SMTP(EMAIL_HOST, EMAIL_PORT) as server:
             server.set_debuglevel(1)  # 🐛 Mode debug SMTP activé

@@ -9,7 +9,8 @@ def schedule_pickup(data, access_token):
     print("📦 Planification d’un enlèvement UPS...")
 
     version = "v1"
-    url = f"https://onlinetools.ups.com/api/pickupcreation/{version}/pickup"
+    # url = f"https://onlinetools.ups.com/api/pickupcreation/{version}/pickup"
+    url = f"https://wwwcie.ups.com/api/pickupcreation/{version}/pickup"
 
     payload = {
         "PickupCreationRequest": {

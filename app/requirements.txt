@@ -2,3 +2,5 @@ requests
 flask
 python-dotenv
 tabulate
+Babel
+pytz
