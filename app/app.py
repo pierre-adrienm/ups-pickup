@@ -1,12 +1,19 @@
 import os
 import requests
-from flask import Flask, jsonify
+from flask import Flask, jsonify, request
 from pickup import schedule_pickup
 from email_sender import send_email
 from history import save_pickup, get_history, export_history_csv
 from datetime import datetime
 from babel.dates import format_date
 from pytz import timezone
+from ups_status_sync import sync_pickups_from_csv
+from db import get_session, Pickup
+
+def get_current_horodatage():
+    tz = timezone('Europe/Paris')
+    now = datetime.now(tz)
+    return now.strftime("%Y-%m-%d %H:%M:%S")
 
 app = Flask(__name__)
 
@@ -75,8 +82,8 @@ def create():
             }
             save_pickup(pickup_entry)
 
-            date_obj = datetime.strptime(test_data["date"], "%Y%m%d")
-            formatted_date = format_date(date_obj, format="EEEE d MMMM y", locale="fr_FR")
+            pickup_date = datetime.strptime(test_data["date"], "%Y%m%d")
+            formatted_date = format_date(pickup_date, format='full', locale='fr_FR')
 
             heureDebut = f"{test_data['heure_debut'][:2]}h{test_data['heure_debut'][2:]}"
             heureFin = f"{test_data['heure_fin'][:2]}h{test_data['heure_fin'][2:]}"
@@ -136,7 +143,14 @@ def create():
 @app.route('/api/pickup/history', methods=['GET'])
 def pickup_history():
     try:
-        return jsonify({"status": "success", "data": get_history()})
+        history = get_history()
+
+        # Ajout explicite d'un champ "etat" s'il n'existe pas
+        for entry in history:
+            if "etat" not in entry:
+                entry["etat"] = "Non défini"
+
+        return jsonify({"status": "success", "data": history})
     except Exception as e:
         return jsonify({"status": "error", "message": str(e)})
 
@@ -156,6 +170,88 @@ def clear_pickup_history():
             return jsonify({"status": "error", "message": "Aucun historique à vider."}), 404
     except Exception as e:
         return jsonify({"status": "error", "message": str(e)}), 500
+
+@app.route('/api/pickup/upload_csv', methods=['GET','POST'])
+def generate_fake_csv():
+    try:
+        csv_path = "data/ups_pickup_history.csv"
+        with open(csv_path, mode='w', encoding='utf-8', newline='') as f:
+            f.write("Date d'enlèvement,Numéro de demande,Nom du contact,Références d'enlèvement,État de la demande\n")
+            f.write("5/2/2025,29W44M509BJ,GALLAND Gregory,,Votre demande d'enlèvement est en cours de traitement.\n")
+            f.write("4/30/2025,29H42MEG2IB,GAEL MORISSEAU,,Votre demande d'enlèvement a bien été reçue. Un conducteur UPS passera enlever votre/vos colis.\n")
+            f.write("4/30/2025,29Z445R6DEP,LABEKO UTOPI,,Votre demande d'enlèvement a été annulée.\n")
+
+        return jsonify({
+            "status": "success",
+            "message": "Fichier CSV UPS fictif généré avec succès",
+            "path": csv_path
+        }), 200
+    except Exception as e:
+        return jsonify({"status": "error", "message": str(e)}), 500
+
+@app.route('/api/pickup/sync', methods=['POST', 'GET'])
+def sync_ups_status():
+    try:
+        maj_count = synchroniser()
+        return jsonify({
+            "status": "success",
+            "message": f"{maj_count} statuts synchronisés depuis le CSV UPS"
+        }), 200
+    except Exception as e:
+        return jsonify({
+            "status": "error",
+            "message": str(e)
+        }), 500
+
+@app.route('/api/pickup/add_test', methods=['POST', 'GET'])
+def add_test_entry():
+    try:
+        test_entry = {
+            "pickup_id": "29Z445R6DEP",
+            "nom": "Test Synchronisation",
+            "telephone": "0612345678",
+            "adresse": "1 rue de Test",
+            "nombr_Colis": 4,
+            "poids_total": 15,
+            "date": "20250507",
+            "heure": "1300 - 1700",
+            "horodatage": datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        }
+
+        save_pickup(test_entry)
+
+        return jsonify({
+            "status": "success",
+            "message": f"Entrée de test ajoutée avec pickup_id {test_entry['pickup_id']}"
+        }), 200
+
+    except Exception as e:
+        return jsonify({"status": "error", "message": str(e)}), 500
+
+@app.route("/sync", methods=["POST"])
+def sync():
+    try:
+        sync_pickups_from_csv()
+        return jsonify({"message": "Synchronisation réussie", "status": "ok"}), 200
+    except Exception as e:
+        return jsonify({"message": str(e), "status": "error"}), 500
+
+@app.route("/status/<pickup_id>", methods=["GET"])
+def get_status(pickup_id):
+    session = get_session()
+    pickup = session.query(Pickup).filter_by(pickup_id=pickup_id).first()
+    session.close()
+
+    if pickup:
+        return jsonify({
+            "pickup_id": pickup.pickup_id,
+            "nom": pickup.nom,
+            "date": pickup.date,
+            "etat": pickup.etat,
+            "horodatage": pickup.horodatage.isoformat()
+        })
+    else:
+        return jsonify({"message": "Enlèvement non trouvé", "status": "not_found"}), 404
 
 if __name__ == '__main__':
     app.run(debug=True, host='0.0.0.0')

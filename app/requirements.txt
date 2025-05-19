@@ -1,6 +1,10 @@
+selenium
+webdriver-manager
 requests
 flask
 python-dotenv
 tabulate
 Babel
 pytz
+psycopg2-binary
+sqlalchemy
