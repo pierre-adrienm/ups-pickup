@@ -38,6 +38,10 @@ COPY app/.env .
 
 # Installer Node et Python
 RUN npm install puppeteer
+
+# Installer node-fetch pour les requêtes HTTP
+# RUN npm install node-fetch@2
+
 RUN pip install --no-cache-dir -r requirements.txt
 
 # Ajouter cron job (écrit un timestamp toutes les minutes dans cron.log)

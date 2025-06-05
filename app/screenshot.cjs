@@ -1,6 +1,7 @@
 const puppeteer = require('puppeteer-extra');
 const fs = require('fs');
 require('dotenv').config({ path: '/app/.env' });
+const fetch = require('node-fetch');
 
 const StealthPlugin = require('puppeteer-extra-plugin-stealth');
 puppeteer.use(StealthPlugin());
@@ -99,11 +100,15 @@ puppeteer.use(StealthPlugin());
       console.log('⏳ Aucun sélecteur distinctif détecté sur la page de pickup');
     });
 
-    const cheerio = require('cheerio');
-
+    const htmlContent = await page.content();
+    
     // Charger le HTML sauvegardé
-    const pickupHtml = fs.readFileSync('/data/ups_pickup_history.html', 'utf-8');
-    const $ = cheerio.load(pickupHtml);
+    fs.writeFileSync('/data/ups_pickup_history.html', htmlContent, 'utf-8');
+    await page.screenshot({ path: '/data/ups_pickup_history.png', fullPage: true });
+    console.log('📸 HTML et capture écran sauvegardés');
+
+    const cheerio = require('cheerio');
+    const $ = cheerio.load(htmlContent);
 
     // Extraire les données du tableau
     const data = [];
@@ -124,6 +129,21 @@ puppeteer.use(StealthPlugin());
     // Sauvegarder dans un fichier JSON
     fs.writeFileSync('/data/last_pickup.json', JSON.stringify(data, null, 2), 'utf-8');
     console.log('✅ Données du tableau enregistrées dans last_pickup.json');
+    
+    const webhookUrl = 'https://hook.eu2.make.com/tgxqrx7tqpf8358644fp91xustsdiyeh';
+
+    if (data.length > 0) {
+      const firstRow = data[0];
+      console.log('🧪 Envoi de la première ligne à Make :', firstRow);
+
+      const response = await fetch(webhookUrl, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(firstRow)
+      });
+
+      console.log('📤 Première ligne envoyée à Make. Statut :', response.status);
+    }
 
   } catch (err) {
     console.error('❌ Erreur générale :', err);
